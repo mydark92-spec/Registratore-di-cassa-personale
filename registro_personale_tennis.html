@@ -9,6 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="apple-touch-icon" href="./tennis-icon-180.png">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <title>Conti di campo | Registro personale</title>
     <style>
         :root {
@@ -89,10 +90,11 @@
         .ledger { min-width: 0; overflow: hidden; }
         .ledger-head { padding: 19px 21px 15px; border-bottom: 1px solid var(--line); }
         .ledger-title { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-        .ledger-actions { display: flex; gap: 8px; }
+        .ledger-actions { display: flex; flex-wrap: wrap; gap: 8px; }
         .secondary-button { min-height: 34px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 5px; background: white; color: var(--ink); font-size: 11px; font-weight: 700; }
         .secondary-button:hover { background: #f2f3ee; }
         .movement-count { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+        .sheet-link { display: inline-block; margin-top: 7px; color: var(--green); font-size: 11px; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
         .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         th { padding: 10px 13px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
@@ -109,6 +111,7 @@
         .empty { padding: 42px 18px; color: var(--muted); text-align: center; font-size: 13px; }
         .empty strong { display: block; margin-bottom: 5px; color: var(--ink); font-family: Georgia, "Times New Roman", serif; font-size: 18px; font-weight: 500; }
         .footnote { margin: 18px 2px 0; color: var(--muted); font-size: 11px; }
+        .privacy-link { color: var(--green); }
         .toast { position: fixed; right: 20px; bottom: 20px; z-index: 2; padding: 11px 15px; border-radius: 6px; background: var(--ink); color: white; font-size: 13px; box-shadow: var(--shadow); animation: rise .2s ease-out; }
         .toast[hidden] { display: none; }
         @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -285,10 +288,13 @@
                         <h2 id="ledger-title">Movimenti</h2>
                         <div class="ledger-actions">
                             <button class="secondary-button" id="export-button" type="button">↓ Esporta CSV</button>
-                            <button class="secondary-button" id="print-button" type="button">Stampa</button>
+                            <button class="secondary-button" id="google-config-button" type="button">Collega Drive</button>
+                            <button class="secondary-button" id="print-button" type="button">Drive + stampa</button>
+                            <button class="secondary-button" id="browser-print-button" type="button">Stampa locale</button>
                         </div>
                     </div>
                     <p class="movement-count" id="movement-count">0 movimenti</p>
+                    <a class="sheet-link" id="google-sheet-link" href="#" target="_blank" rel="noopener" hidden>Apri foglio Google</a>
                 </div>
                 <div class="table-wrap">
                     <table>
@@ -299,13 +305,19 @@
                 </div>
             </section>
         </div>
-        <p class="footnote">Su iPhone: apri questo indirizzo HTTPS in Safari, tocca Condividi e scegli “Aggiungi alla schermata Home”. I dati restano su questo dispositivo; per conservarne una copia, esporta il CSV.</p>
+        <p class="footnote">Su iPhone: apri questo indirizzo HTTPS in Safari e scegli “Condividi” → “Aggiungi alla schermata Home”. I movimenti restano sul dispositivo; “Drive + stampa” aggiorna il foglio Google del mese selezionato. <a class="privacy-link" href="./privacy.html" target="_blank" rel="noopener">Informativa privacy</a></p>
     </main>
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
     <script>
         (() => {
             const STORAGE_KEY = 'registro_personale_tennis_v1';
+            const GOOGLE_CLIENT_ID = '954824742285-fhhvo6c5ogercp1kqh901h2feq33sn7c.apps.googleusercontent.com';
+            const GOOGLE_SPREADSHEET_ID_KEY = 'registro_tennis_google_spreadsheet_id_v1';
+            const GOOGLE_SHEET_LINK_KEY = 'registro_tennis_google_sheet_link_v1';
+            const GOOGLE_AUTHORIZED_KEY = 'registro_tennis_google_authorized_v1';
+            const GOOGLE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+            const GOOGLE_API = 'https://sheets.googleapis.com/v4/spreadsheets';
             const categories = {
                 entrata: ['Lezione individuale', 'Lezione di gruppo', 'Pacchetto lezioni', 'Altro incasso'],
                 uscita: ['Affitto campo', 'Attrezzatura', 'Trasporti', 'Formazione', 'Commissioni', 'Altra spesa']
@@ -394,12 +406,196 @@
                 });
             }
 
-            function showToast(message) {
+            function showToast(message, duration = 2600) {
                 const toast = document.getElementById('toast');
                 toast.textContent = message;
                 toast.hidden = false;
                 clearTimeout(toastTimer);
-                toastTimer = setTimeout(() => { toast.hidden = true; }, 2600);
+                toastTimer = setTimeout(() => { toast.hidden = true; }, duration);
+            }
+
+            async function connectGoogleDrive(event) {
+                const button = event.currentTarget;
+                button.disabled = true;
+                try {
+                    await requestGoogleAccessToken();
+                    showToast('Drive collegato. Ora puoi salvare e stampare il riepilogo.', 4500);
+                } catch (error) {
+                    showToast(`Accesso Google: ${error.message}`, 7000);
+                } finally {
+                    button.disabled = false;
+                }
+            }
+
+            function requestGoogleAccessToken() {
+                const clientId = GOOGLE_CLIENT_ID;
+                if (clientId.startsWith('GOOGLE_')) throw new Error('Il Client ID Google non è ancora configurato.');
+                if (!window.google?.accounts?.oauth2) {
+                    throw new Error('Accesso Google non caricato. Verifica la connessione e riprova.');
+                }
+
+                return new Promise((resolve, reject) => {
+                    const tokenClient = window.google.accounts.oauth2.initTokenClient({
+                        client_id: clientId,
+                        scope: GOOGLE_SCOPE,
+                        callback: response => {
+                            if (response.error || !response.access_token) {
+                                reject(new Error(response.error_description || response.error || 'Autorizzazione Google non riuscita.'));
+                                return;
+                            }
+                            localStorage.setItem(GOOGLE_AUTHORIZED_KEY, 'true');
+                            resolve(response.access_token);
+                        },
+                        error_callback: error => reject(new Error(error.message || 'Accesso Google annullato.'))
+                    });
+                    tokenClient.requestAccessToken({
+                        prompt: localStorage.getItem(GOOGLE_AUTHORIZED_KEY) ? '' : 'consent'
+                    });
+                });
+            }
+
+            async function googleApiRequest(url, accessToken, options = {}) {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                const result = response.status === 204 ? null : await response.json().catch(() => null);
+                if (!response.ok) {
+                    const error = new Error(result?.error?.message || `Errore Google (${response.status}).`);
+                    error.status = response.status;
+                    throw error;
+                }
+                return result;
+            }
+
+            async function getGoogleWorkbook(accessToken, month) {
+                const storedId = localStorage.getItem(GOOGLE_SPREADSHEET_ID_KEY);
+                if (storedId) {
+                    try {
+                        const spreadsheet = await googleApiRequest(`${GOOGLE_API}/${storedId}?fields=spreadsheetId,sheets.properties`, accessToken);
+                        return ensureMonthSheet(accessToken, spreadsheet, month);
+                    } catch (error) {
+                        if (error.status !== 404) throw error;
+                        localStorage.removeItem(GOOGLE_SPREADSHEET_ID_KEY);
+                    }
+                }
+
+                const query = encodeURIComponent("name = 'Registro personale Tennis' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false");
+                const files = await googleApiRequest(`https://www.googleapis.com/drive/v3/files?q=${query}&pageSize=20&orderBy=modifiedTime%20desc&fields=files(id,name)`, accessToken);
+                if (files.files?.length) {
+                    localStorage.setItem(GOOGLE_SPREADSHEET_ID_KEY, files.files[0].id);
+                    const spreadsheet = await googleApiRequest(`${GOOGLE_API}/${files.files[0].id}?fields=spreadsheetId,sheets.properties`, accessToken);
+                    return ensureMonthSheet(accessToken, spreadsheet, month);
+                }
+
+                const spreadsheet = await googleApiRequest(GOOGLE_API, accessToken, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        properties: { title: 'Registro personale Tennis', locale: 'it_IT' },
+                        sheets: [{ properties: { title: month } }]
+                    })
+                });
+                localStorage.setItem(GOOGLE_SPREADSHEET_ID_KEY, spreadsheet.spreadsheetId);
+                return { spreadsheetId: spreadsheet.spreadsheetId, sheetId: spreadsheet.sheets[0].properties.sheetId };
+            }
+
+            async function ensureMonthSheet(accessToken, spreadsheet, month) {
+                const existing = spreadsheet.sheets?.find(sheet => sheet.properties.title === month);
+                if (existing) return { spreadsheetId: spreadsheet.spreadsheetId, sheetId: existing.properties.sheetId };
+
+                const result = await googleApiRequest(`${GOOGLE_API}/${spreadsheet.spreadsheetId}:batchUpdate`, accessToken, {
+                    method: 'POST',
+                    body: JSON.stringify({ requests: [{ addSheet: { properties: { title: month } } }] })
+                });
+                return { spreadsheetId: spreadsheet.spreadsheetId, sheetId: result.replies[0].addSheet.properties.sheetId };
+            }
+
+            async function saveMonthToGoogleDrive() {
+                const month = document.getElementById('month-filter').value;
+                const monthMovements = movements
+                    .filter(item => item.date.startsWith(month))
+                    .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
+                if (!monthMovements.length) {
+                    showToast('Non ci sono movimenti da salvare per il mese selezionato.');
+                    return null;
+                }
+
+                const accessToken = await requestGoogleAccessToken();
+                const { spreadsheetId, sheetId } = await getGoogleWorkbook(accessToken, month);
+                const tab = `'${month}'`;
+                const encodedDataRange = encodeURIComponent(`${tab}!A1:H`);
+                const previous = await googleApiRequest(`${GOOGLE_API}/${spreadsheetId}/values/${encodedDataRange}`, accessToken);
+                const previousRowCount = previous.values?.length || 1;
+                const headers = ['Data', 'Ora', 'Tipo', 'Importo', 'Categoria', 'Descrizione / allievo', 'Pagamento', 'ID movimento'];
+                const rows = [headers, ...monthMovements.map(item => [
+                    item.date,
+                    new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' }).format(new Date(item.createdAt)),
+                    item.type,
+                    item.amount,
+                    item.category,
+                    item.description || '',
+                    item.payment,
+                    item.id
+                ])];
+
+                await googleApiRequest(`${GOOGLE_API}/${spreadsheetId}/values/${encodeURIComponent(`${tab}!A1:H${rows.length}`)}?valueInputOption=RAW`, accessToken, {
+                    method: 'PUT',
+                    body: JSON.stringify({ majorDimension: 'ROWS', values: rows })
+                });
+                if (previousRowCount > rows.length) {
+                    await googleApiRequest(`${GOOGLE_API}/${spreadsheetId}/values/${encodeURIComponent(`${tab}!A${rows.length + 1}:H${previousRowCount}`)}:clear`, accessToken, {
+                        method: 'POST',
+                        body: JSON.stringify({})
+                    });
+                }
+
+                const income = monthMovements.reduce((sum, item) => sum + (item.type === 'entrata' ? item.amount : 0), 0);
+                const expenses = monthMovements.reduce((sum, item) => sum + (item.type === 'uscita' ? item.amount : 0), 0);
+                await googleApiRequest(`${GOOGLE_API}/${spreadsheetId}/values/${encodeURIComponent(`${tab}!J1:K4`)}?valueInputOption=RAW`, accessToken, {
+                    method: 'PUT',
+                    body: JSON.stringify({ majorDimension: 'ROWS', values: [
+                        ['Riepilogo mese', ''],
+                        ['Entrate', income],
+                        ['Uscite', expenses],
+                        ['Saldo netto', income - expenses]
+                    ] })
+                });
+
+                await googleApiRequest(`${GOOGLE_API}/${spreadsheetId}:batchUpdate`, accessToken, {
+                    method: 'POST',
+                    body: JSON.stringify({ requests: [
+                        {
+                            repeatCell: {
+                                range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: 8 },
+                                cell: { userEnteredFormat: { backgroundColor: { red: 0.06, green: 0.28, blue: 0.18 }, horizontalAlignment: 'CENTER', textFormat: { bold: true, foregroundColor: { red: 1, green: 1, blue: 1 } } } },
+                                fields: 'userEnteredFormat(backgroundColor,horizontalAlignment,textFormat)'
+                            }
+                        },
+                        { updateSheetProperties: { properties: { sheetId, gridProperties: { frozenRowCount: 1 } }, fields: 'gridProperties.frozenRowCount' } },
+                        {
+                            repeatCell: {
+                                range: { sheetId, startRowIndex: 1, startColumnIndex: 3, endColumnIndex: 4 },
+                                cell: { userEnteredFormat: { numberFormat: { type: 'CURRENCY', pattern: '€ #,##0.00' } } },
+                                fields: 'userEnteredFormat.numberFormat'
+                            }
+                        },
+                        {
+                            repeatCell: {
+                                range: { sheetId, startRowIndex: 1, endRowIndex: 4, startColumnIndex: 10, endColumnIndex: 11 },
+                                cell: { userEnteredFormat: { numberFormat: { type: 'CURRENCY', pattern: '€ #,##0.00' } } },
+                                fields: 'userEnteredFormat.numberFormat'
+                            }
+                        }
+                    ] })
+                });
+
+                const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit#gid=${sheetId}`;
+                localStorage.setItem(GOOGLE_SHEET_LINK_KEY, JSON.stringify({ url: sheetUrl, month }));
+                return sheetUrl;
             }
 
             function deleteMovement(id) {
@@ -445,7 +641,27 @@
             });
 
             document.getElementById('month-filter').addEventListener('change', render);
-            document.getElementById('print-button').addEventListener('click', () => window.print());
+            document.getElementById('google-config-button').addEventListener('click', connectGoogleDrive);
+            document.getElementById('browser-print-button').addEventListener('click', () => window.print());
+            document.getElementById('print-button').addEventListener('click', async event => {
+                const button = event.currentTarget;
+                button.disabled = true;
+                try {
+                    const sheetUrl = await saveMonthToGoogleDrive();
+                    if (!sheetUrl) return;
+                    const link = document.getElementById('google-sheet-link');
+                    const saved = JSON.parse(localStorage.getItem(GOOGLE_SHEET_LINK_KEY));
+                    link.href = sheetUrl;
+                    link.textContent = `Apri foglio Google · ${saved.month}`;
+                    link.hidden = false;
+                    showToast('Mese salvato su Google Drive. Apro la stampa.', 4500);
+                    window.print();
+                } catch (error) {
+                    showToast(`Google Drive: ${error.message}`, 7000);
+                } finally {
+                    button.disabled = false;
+                }
+            });
             document.getElementById('export-button').addEventListener('click', () => {
                 const month = document.getElementById('month-filter').value;
                 const rows = movements.filter(item => item.date.startsWith(month)).sort((a, b) => a.date.localeCompare(b.date));
@@ -468,6 +684,17 @@
             document.getElementById('month-filter').value = today.slice(0, 7);
             updateCategories();
             render();
+            try {
+                const savedSheet = JSON.parse(localStorage.getItem(GOOGLE_SHEET_LINK_KEY) || 'null');
+                if (savedSheet?.url) {
+                    const link = document.getElementById('google-sheet-link');
+                    link.href = savedSheet.url;
+                    link.textContent = `Apri foglio Google · ${savedSheet.month}`;
+                    link.hidden = false;
+                }
+            } catch (error) {
+                localStorage.removeItem(GOOGLE_SHEET_LINK_KEY);
+            }
         })();
     </script>
     <script>

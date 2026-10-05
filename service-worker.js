@@ -1,6 +1,8 @@
-const CACHE_NAME = 'registro-tennis-v1';
+const CACHE_NAME = 'registro-tennis-v3';
 const APP_FILES = [
+    './index.html',
     './registro_personale_tennis.html',
+    './privacy.html',
     './manifest.webmanifest',
     './tennis-icon-192.png',
     './tennis-icon-512.png',
