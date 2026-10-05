@@ -1,0 +1,1 @@
+# Registratore-di-cassa-personale
