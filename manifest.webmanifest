@@ -1,0 +1,33 @@
+{
+  "id": "./registro_personale_tennis.html",
+  "name": "Registro personale Tennis",
+  "short_name": "Registro Tennis",
+  "description": "Registro personale di entrate e uscite per le lezioni di tennis.",
+  "lang": "it-IT",
+  "start_url": "./registro_personale_tennis.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f1f5f9",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "./tennis-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./tennis-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./tennis-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

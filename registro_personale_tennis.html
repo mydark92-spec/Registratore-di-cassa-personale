@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Registro Tennis">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="apple-touch-icon" href="./tennis-icon-180.png">
+    <title>Conti di campo | Registro personale</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --paper: #f5f4ef;
+            --white: #fffefa;
+            --ink: #202722;
+            --muted: #68736a;
+            --line: #dfe3d9;
+            --green: #245b43;
+            --green-soft: #e4efe5;
+            --red: #a54435;
+            --red-soft: #f8e9e4;
+            --yellow: #e8c85c;
+            --shadow: 0 12px 36px rgba(37, 49, 40, .07);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background-color: var(--paper);
+            background-image: radial-gradient(#d8ddd3 0.7px, transparent 0.7px);
+            background-size: 17px 17px;
+            color: var(--ink);
+            font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+            line-height: 1.45;
+        }
+        button, input, select { font: inherit; }
+        button { cursor: pointer; }
+        .shell { width: min(1120px, calc(100% - 36px)); margin: 0 auto; padding: 32px 0 52px; }
+        .topline { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 30px; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-mark {
+            display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 auto;
+            border: 1px solid var(--green); border-radius: 50%; color: var(--green); font-size: 20px;
+            background: repeating-linear-gradient(135deg, var(--white), var(--white) 5px, #edf2e9 5px, #edf2e9 7px);
+        }
+        .brand-name { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 20px; font-weight: 600; }
+        .brand-caption { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+        .privacy { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+        .privacy::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #548764; }
+        .intro { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+        .eyebrow { margin: 0 0 8px; color: var(--green); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+        h1 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(32px, 5vw, 48px); line-height: 1.05; font-weight: 500; }
+        .intro-copy { max-width: 345px; margin: 0; color: var(--muted); font-size: 14px; }
+        .month-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 26px 0 12px; }
+        .month-bar label { color: var(--muted); font-size: 12px; font-weight: 700; }
+        .month-input { width: 168px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; background: var(--white); color: var(--ink); }
+        .summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+        .stat { min-height: 126px; padding: 19px 21px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); box-shadow: var(--shadow); }
+        .stat.net { color: white; border-color: var(--green); background: var(--green); }
+        .stat-label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; font-weight: 700; }
+        .stat.net .stat-label, .stat.net .stat-note { color: #d9e8dc; }
+        .stat-symbol { display: grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; background: var(--green-soft); color: var(--green); font-size: 13px; }
+        .stat.out .stat-symbol { color: var(--red); background: var(--red-soft); }
+        .stat.net .stat-symbol { color: var(--green); background: var(--yellow); }
+        .stat-value { display: block; margin-top: 13px; font-family: Georgia, "Times New Roman", serif; font-size: 30px; font-variant-numeric: tabular-nums; }
+        .stat-note { margin: 2px 0 0; color: var(--muted); font-size: 11px; }
+        .workspace { display: grid; grid-template-columns: minmax(270px, .78fr) minmax(0, 1.55fr); gap: 16px; margin-top: 18px; align-items: start; }
+        .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--white); box-shadow: var(--shadow); }
+        .form-panel { padding: 22px; }
+        .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 15px; border-bottom: 1px solid var(--line); }
+        .panel h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 21px; font-weight: 600; }
+        .form-grid { display: grid; gap: 14px; margin-top: 17px; }
+        .field { display: grid; gap: 6px; }
+        .field label { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+        .field input, .field select { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 6px; background-color: #fff; color: var(--ink); outline: none; }
+        .field input:focus, .field select:focus, .month-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(36, 91, 67, .12); }
+        .type-switch { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; border: 1px solid var(--line); border-radius: 7px; background: #f2f3ee; }
+        .type-button { min-height: 38px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 800; }
+        .type-button[aria-pressed="true"][data-type="entrata"] { background: var(--green); color: white; }
+        .type-button[aria-pressed="true"][data-type="uscita"] { background: var(--red); color: white; }
+        .amount-wrap { position: relative; }
+        .amount-wrap span { position: absolute; top: 10px; left: 12px; color: var(--muted); font-weight: 700; }
+        .amount-wrap input { padding-left: 30px; font-size: 18px; font-weight: 700; }
+        .primary-button { width: 100%; min-height: 45px; margin-top: 2px; border: 0; border-radius: 6px; background: var(--green); color: white; font-size: 13px; font-weight: 800; transition: background .15s, transform .15s; }
+        .primary-button:hover { background: #194b35; transform: translateY(-1px); }
+        .ledger { min-width: 0; overflow: hidden; }
+        .ledger-head { padding: 19px 21px 15px; border-bottom: 1px solid var(--line); }
+        .ledger-title { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+        .ledger-actions { display: flex; gap: 8px; }
+        .secondary-button { min-height: 34px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 5px; background: white; color: var(--ink); font-size: 11px; font-weight: 700; }
+        .secondary-button:hover { background: #f2f3ee; }
+        .movement-count { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { padding: 10px 13px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+        td { padding: 12px 13px; border-bottom: 1px solid #eceee8; font-size: 12px; vertical-align: middle; }
+        tbody tr:last-child td { border-bottom: 0; }
+        .date-cell { color: var(--muted); white-space: nowrap; }
+        .description-cell { min-width: 125px; font-weight: 700; }
+        .category-cell { color: var(--muted); }
+        .amount-cell { text-align: right; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .amount-in { color: var(--green); }
+        .amount-out { color: var(--red); }
+        .delete-button { width: 30px; height: 30px; border: 0; border-radius: 5px; background: transparent; color: #8a938b; font-size: 16px; }
+        .delete-button:hover { background: var(--red-soft); color: var(--red); }
+        .empty { padding: 42px 18px; color: var(--muted); text-align: center; font-size: 13px; }
+        .empty strong { display: block; margin-bottom: 5px; color: var(--ink); font-family: Georgia, "Times New Roman", serif; font-size: 18px; font-weight: 500; }
+        .footnote { margin: 18px 2px 0; color: var(--muted); font-size: 11px; }
+        .toast { position: fixed; right: 20px; bottom: 20px; z-index: 2; padding: 11px 15px; border-radius: 6px; background: var(--ink); color: white; font-size: 13px; box-shadow: var(--shadow); animation: rise .2s ease-out; }
+        .toast[hidden] { display: none; }
+        @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        :root {
+            --paper: #f1f5f9;
+            --white: #ffffff;
+            --ink: #1e293b;
+            --muted: #64748b;
+            --line: #e2e8f0;
+            --green: #16a34a;
+            --green-soft: #dcfce7;
+            --red: #b91c1c;
+            --red-soft: #fee2e2;
+            --yellow: #f59e0b;
+            --shadow: 0 1px 3px rgba(15, 23, 42, .08);
+        }
+        body { background: var(--paper); font-family: Arial, Helvetica, sans-serif; }
+        .shell { width: min(1280px, calc(100% - 32px)); padding-top: 0; }
+        .topline { margin-bottom: 22px; padding: 14px 20px; border-radius: 0 0 8px 8px; background: #0f172a; color: white; }
+        .brand-mark { border-color: #16a34a; border-radius: 10px; background: #16a34a; color: white; }
+        .brand-name { color: white; font-family: Arial, Helvetica, sans-serif; }
+        .brand-caption { color: #cbd5e1; }
+        .privacy { color: #cbd5e1; }
+        .intro { align-items: center; margin-bottom: 16px; }
+        .eyebrow { display: none; }
+        h1 { font-family: Arial, Helvetica, sans-serif; font-size: 26px; font-weight: 700; line-height: 1.2; }
+        .intro-copy { font-size: 13px; }
+        .month-bar { margin: 16px 0 10px; }
+        .summary { gap: 16px; }
+        .stat { min-height: 112px; padding: 17px 20px; border-radius: 12px; box-shadow: 0 1px 2px rgba(15, 23, 42, .05); }
+        .stat.in { border-color: #bbf7d0; background: #f0fdf4; }
+        .stat.out { border-color: #bfdbfe; background: #eff6ff; }
+        .stat.net { border-color: #fde68a; background: #fffbeb; color: #78350f; }
+        .stat.net .stat-label, .stat.net .stat-note { color: #92400e; }
+        .stat-symbol { border-radius: 8px; }
+        .stat.net .stat-symbol { background: #fef3c7; }
+        .stat-value { font-family: Arial, Helvetica, sans-serif; font-size: 28px; font-weight: 800; }
+        .workspace { grid-template-columns: minmax(280px, .8fr) minmax(0, 1.6fr); gap: 20px; margin-top: 16px; }
+        .panel { border-radius: 12px; box-shadow: var(--shadow); }
+        .panel h2 { font-family: Arial, Helvetica, sans-serif; font-size: 18px; }
+        .form-panel { padding: 20px; }
+        .field input, .field select { border-radius: 8px; background: #f8fafc; }
+        .type-switch { border-radius: 8px; }
+        .primary-button { border-radius: 8px; }
+        .secondary-button { border-radius: 7px; }
+        .ledger-head { padding: 18px 20px 14px; }
+        th { background: #f8fafc; }
+        .empty strong { font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 700; }
+        .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+        @media (max-width: 760px) {
+            .shell { width: min(100% - 24px, 560px); padding-top: 21px; }
+            .topline { margin-bottom: 24px; }
+            .intro { display: block; }
+            .intro-copy { margin-top: 10px; }
+            .summary { gap: 8px; }
+            .stat { min-height: 110px; padding: 13px; }
+            .stat-value { font-size: clamp(19px, 5vw, 27px); }
+            .stat-label { gap: 5px; font-size: 10px; }
+            .stat-symbol { width: 19px; height: 19px; font-size: 11px; }
+            .workspace { grid-template-columns: minmax(0, 1fr); }
+            .ledger-head { padding: 16px 14px 13px; }
+            th, td { padding-right: 9px; padding-left: 9px; }
+        }
+        @media (max-width: 390px) {
+            .brand-caption { font-size: 11px; }
+            .privacy { font-size: 10px; }
+            .stat { padding: 11px 9px; }
+            .stat-label { align-items: flex-start; }
+            .ledger-title { align-items: flex-start; flex-direction: column; }
+        }
+        @media print {
+            body { background: white; }
+            .shell { width: 100%; padding: 0; }
+            .topline, .intro, .month-bar, .form-panel, .ledger-actions, .delete-col, .footnote { display: none !important; }
+            .workspace { display: block; margin-top: 18px; }
+            .panel, .stat { box-shadow: none; }
+            .summary { margin-top: 15px; }
+            .stat { min-height: auto; padding: 12px; }
+            .stat.net { color: var(--ink); background: white; border-color: var(--line); }
+            .stat.net .stat-label, .stat.net .stat-note { color: var(--muted); }
+            .stat.net .stat-symbol { background: #eee; }
+            .ledger { margin-top: 15px; }
+            .table-wrap { overflow: visible; }
+        }
+    </style>
+</head>
+<body>
+    <main class="shell">
+        <header class="topline">
+            <div class="brand">
+                <div class="brand-mark" aria-hidden="true">◉</div>
+                <div>
+                    <p class="brand-name">Conti di campo</p>
+                    <p class="brand-caption">Il tuo registro, dentro e fuori dal campo</p>
+                </div>
+            </div>
+            <span class="privacy">Dati salvati su questo dispositivo</span>
+        </header>
+
+        <section class="intro" aria-labelledby="page-title">
+            <div>
+                <p class="eyebrow">Registro personale · tennis</p>
+                <h1 id="page-title">Registro personale Tennis</h1>
+            </div>
+            <p class="intro-copy">Entrate delle lezioni e spese di lavoro, in un unico riepilogo mensile.</p>
+        </section>
+
+        <div class="month-bar">
+            <label for="month-filter">RIEPILOGO DEL MESE</label>
+            <input class="month-input" id="month-filter" type="month" aria-label="Seleziona il mese">
+        </div>
+
+        <section class="summary" aria-label="Riepilogo finanziario">
+            <article class="stat in">
+                <div class="stat-label"><span class="stat-symbol" aria-hidden="true">↑</span> ENTRATE</div>
+                <strong class="stat-value" id="total-income">€ 0,00</strong>
+                <p class="stat-note">Lezioni e altri incassi</p>
+            </article>
+            <article class="stat out">
+                <div class="stat-label"><span class="stat-symbol" aria-hidden="true">↓</span> USCITE</div>
+                <strong class="stat-value" id="total-expenses">€ 0,00</strong>
+                <p class="stat-note">Spese del mese</p>
+            </article>
+            <article class="stat net">
+                <div class="stat-label"><span class="stat-symbol" aria-hidden="true">=</span> SALDO NETTO</div>
+                <strong class="stat-value" id="total-net">€ 0,00</strong>
+                <p class="stat-note">Entrate meno uscite</p>
+            </article>
+        </section>
+
+        <div class="workspace">
+            <section class="panel form-panel" aria-labelledby="form-title">
+                <div class="panel-head">
+                    <h2 id="form-title">Nuovo movimento</h2>
+                </div>
+                <form id="movement-form" class="form-grid">
+                    <div class="type-switch" role="group" aria-label="Tipo di movimento">
+                        <button class="type-button" type="button" data-type="entrata" aria-pressed="true">＋ Entrata</button>
+                        <button class="type-button" type="button" data-type="uscita" aria-pressed="false">− Uscita</button>
+                    </div>
+                    <div class="field">
+                        <label for="amount">Importo</label>
+                        <div class="amount-wrap"><span aria-hidden="true">€</span><input id="amount" name="amount" type="number" min="0.01" step="0.01" placeholder="0,00" required inputmode="decimal"></div>
+                    </div>
+                    <div class="field">
+                        <label for="category">Categoria</label>
+                        <select id="category" name="category" required></select>
+                    </div>
+                    <div class="field">
+                        <label for="description">Descrizione / allievo</label>
+                        <input id="description" name="description" type="text" maxlength="80" placeholder="Es. Lezione individuale · Marco">
+                    </div>
+                    <div class="field">
+                        <label for="payment">Metodo di pagamento</label>
+                        <select id="payment" name="payment">
+                            <option>Contanti</option>
+                            <option>Bonifico</option>
+                            <option>Carta / POS</option>
+                            <option>Altro</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="movement-date">Data</label>
+                        <input id="movement-date" name="date" type="date" required>
+                    </div>
+                    <button class="primary-button" type="submit">Registra movimento</button>
+                </form>
+            </section>
+
+            <section class="panel ledger" aria-labelledby="ledger-title">
+                <div class="ledger-head">
+                    <div class="ledger-title">
+                        <h2 id="ledger-title">Movimenti</h2>
+                        <div class="ledger-actions">
+                            <button class="secondary-button" id="export-button" type="button">↓ Esporta CSV</button>
+                            <button class="secondary-button" id="print-button" type="button">Stampa</button>
+                        </div>
+                    </div>
+                    <p class="movement-count" id="movement-count">0 movimenti</p>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Data</th><th>Descrizione</th><th>Categoria</th><th>Pagamento</th><th style="text-align:right">Importo</th><th class="delete-col" aria-label="Elimina movimento"></th></tr></thead>
+                        <tbody id="movement-list"></tbody>
+                    </table>
+                    <div class="empty" id="empty-state"><strong>Il mese è ancora tutto da scrivere.</strong>Quando registri un movimento, lo trovi qui.</div>
+                </div>
+            </section>
+        </div>
+        <p class="footnote">Su iPhone: apri questo indirizzo HTTPS in Safari, tocca Condividi e scegli “Aggiungi alla schermata Home”. I dati restano su questo dispositivo; per conservarne una copia, esporta il CSV.</p>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+    <script>
+        (() => {
+            const STORAGE_KEY = 'registro_personale_tennis_v1';
+            const categories = {
+                entrata: ['Lezione individuale', 'Lezione di gruppo', 'Pacchetto lezioni', 'Altro incasso'],
+                uscita: ['Affitto campo', 'Attrezzatura', 'Trasporti', 'Formazione', 'Commissioni', 'Altra spesa']
+            };
+            const euro = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
+            const form = document.getElementById('movement-form');
+            const categorySelect = document.getElementById('category');
+            const typeButtons = [...document.querySelectorAll('.type-button')];
+            let type = 'entrata';
+            let movements = loadMovements();
+            let toastTimer;
+
+            function localDateString(date = new Date()) {
+                const offset = date.getTimezoneOffset();
+                return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 10);
+            }
+
+            function loadMovements() {
+                try {
+                    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                    return Array.isArray(stored) ? stored.filter(item => item && typeof item.id === 'string' && typeof item.date === 'string' && Number.isFinite(item.amount)) : [];
+                } catch (error) {
+                    return [];
+                }
+            }
+
+            function saveMovements() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(movements));
+                    return true;
+                } catch (error) {
+                    showToast('Non riesco a salvare: spazio del browser esaurito.');
+                    return false;
+                }
+            }
+
+            function updateCategories() {
+                categorySelect.replaceChildren(...categories[type].map(label => {
+                    const option = document.createElement('option');
+                    option.value = label;
+                    option.textContent = label;
+                    return option;
+                }));
+                typeButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.type === type)));
+            }
+
+            function addCell(row, value, className) {
+                const cell = document.createElement('td');
+                cell.textContent = value;
+                if (className) cell.className = className;
+                row.appendChild(cell);
+                return cell;
+            }
+
+            function render() {
+                const month = document.getElementById('month-filter').value;
+                const visible = movements.filter(item => item.date.startsWith(month)).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
+                const income = visible.reduce((sum, item) => sum + (item.type === 'entrata' ? item.amount : 0), 0);
+                const expenses = visible.reduce((sum, item) => sum + (item.type === 'uscita' ? item.amount : 0), 0);
+                document.getElementById('total-income').textContent = euro.format(income);
+                document.getElementById('total-expenses').textContent = euro.format(expenses);
+                document.getElementById('total-net').textContent = euro.format(income - expenses);
+                document.getElementById('movement-count').textContent = `${visible.length} ${visible.length === 1 ? 'movimento' : 'movimenti'}`;
+
+                const list = document.getElementById('movement-list');
+                list.replaceChildren();
+                document.getElementById('empty-state').hidden = visible.length !== 0;
+                visible.forEach(item => {
+                    const row = document.createElement('tr');
+                    addCell(row, new Intl.DateTimeFormat('it-IT').format(new Date(`${item.date}T12:00:00`)), 'date-cell');
+                    addCell(row, item.description || (item.type === 'entrata' ? 'Incasso' : 'Spesa'), 'description-cell');
+                    addCell(row, item.category, 'category-cell');
+                    addCell(row, item.payment, 'category-cell');
+                    addCell(row, `${item.type === 'entrata' ? '+' : '−'} ${euro.format(item.amount)}`, `amount-cell ${item.type === 'entrata' ? 'amount-in' : 'amount-out'}`);
+                    const actionCell = document.createElement('td');
+                    actionCell.className = 'delete-col';
+                    const deleteButton = document.createElement('button');
+                    deleteButton.type = 'button';
+                    deleteButton.className = 'delete-button';
+                    deleteButton.textContent = '×';
+                    deleteButton.setAttribute('aria-label', 'Elimina movimento');
+                    deleteButton.addEventListener('click', () => deleteMovement(item.id));
+                    actionCell.appendChild(deleteButton);
+                    row.appendChild(actionCell);
+                    list.appendChild(row);
+                });
+            }
+
+            function showToast(message) {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.hidden = false;
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => { toast.hidden = true; }, 2600);
+            }
+
+            function deleteMovement(id) {
+                if (!window.confirm('Vuoi eliminare questo movimento?')) return;
+                const previous = movements;
+                movements = movements.filter(item => item.id !== id);
+                if (saveMovements()) render();
+                else movements = previous;
+            }
+
+            typeButtons.forEach(button => button.addEventListener('click', () => {
+                type = button.dataset.type;
+                updateCategories();
+            }));
+
+            form.addEventListener('submit', event => {
+                event.preventDefault();
+                if (!form.reportValidity()) return;
+                const data = new FormData(form);
+                const movement = {
+                    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                    type,
+                    amount: Math.round(Number(data.get('amount')) * 100) / 100,
+                    category: String(data.get('category')),
+                    description: String(data.get('description')).trim(),
+                    payment: String(data.get('payment')),
+                    date: String(data.get('date')),
+                    createdAt: Date.now()
+                };
+                if (!(movement.amount > 0) || !Number.isFinite(movement.amount)) return;
+                movements.unshift(movement);
+                if (!saveMovements()) {
+                    movements.shift();
+                    return;
+                }
+                const savedDate = movement.date;
+                form.reset();
+                document.getElementById('movement-date').value = localDateString();
+                document.getElementById('month-filter').value = savedDate.slice(0, 7);
+                updateCategories();
+                render();
+                showToast(type === 'entrata' ? 'Entrata registrata.' : 'Uscita registrata.');
+            });
+
+            document.getElementById('month-filter').addEventListener('change', render);
+            document.getElementById('print-button').addEventListener('click', () => window.print());
+            document.getElementById('export-button').addEventListener('click', () => {
+                const month = document.getElementById('month-filter').value;
+                const rows = movements.filter(item => item.date.startsWith(month)).sort((a, b) => a.date.localeCompare(b.date));
+                if (!rows.length) {
+                    showToast('Non ci sono movimenti da esportare per questo mese.');
+                    return;
+                }
+                const quote = value => `"${String(value).replace(/"/g, '""')}"`;
+                const csv = ['Data;Tipo;Importo;Categoria;Descrizione;Pagamento', ...rows.map(item => [item.date, item.type, item.amount.toFixed(2).replace('.', ','), item.category, item.description, item.payment].map(quote).join(';'))].join('\r\n');
+                const url = URL.createObjectURL(new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' }));
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `registro-tennis-${month}.csv`;
+                link.click();
+                URL.revokeObjectURL(url);
+            });
+
+            const today = localDateString();
+            document.getElementById('movement-date').value = today;
+            document.getElementById('month-filter').value = today.slice(0, 7);
+            updateCategories();
+            render();
+        })();
+    </script>
+    <script>
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+            navigator.serviceWorker.register('./service-worker.js').catch(error => console.error('Registrazione offline non riuscita:', error));
+        }
+    </script>
+</body>
+</html>
